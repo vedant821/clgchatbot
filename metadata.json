@@ -1,0 +1,6 @@
+{
+  "name": "Apex University AI Help Center",
+  "description": "Agentic AI college help center and student portal with multi-agent query routing, RAG document knowledge base, live database tools, and role-based dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
