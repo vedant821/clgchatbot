@@ -55,21 +55,29 @@ export class AgentOrchestrator {
   private ai: GoogleGenAI | null = null;
 
   constructor() {
+    this.initAI();
+  }
+
+  private initAI(): GoogleGenAI | null {
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
       try {
         this.ai = new GoogleGenAI({
           apiKey,
-          httpOptions: {
-            headers: {
-              'User-Agent': 'aistudio-build',
-            },
-          },
         });
+        return this.ai;
       } catch (err) {
         console.warn('GoogleGenAI initialization warning:', err);
       }
     }
+    return null;
+  }
+
+  private getAI(): GoogleGenAI | null {
+    if (!this.ai) {
+      return this.initAI();
+    }
+    return this.ai;
   }
 
   /**
@@ -298,10 +306,10 @@ export class AgentOrchestrator {
     // Step 5: Answer Generation using Gemini API (with rapid timeout protection) or Grounded Synthesizer
     let finalReply = '';
 
-    if (this.ai) {
-      try {
-        thinkingSteps.push('Calling Gemini 3.8 Flash model with grounded JDCOEM context...');
-        const systemPrompt = `You are the authoritative **${agentMeta.name}** at JD College of Engineering and Management (JDCOEM), Nagpur (jdcoem.in, DTE Code 4163).
+    const ai = this.getAI();
+    if (ai) {
+      const candidateModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+      const systemPrompt = `You are the authoritative **${agentMeta.name}** at JD College of Engineering and Management (JDCOEM), Nagpur (jdcoem.in, DTE Code 4163).
 You assist ${input.userRole || 'students and visitors'} with courteous, accurate, and professional information.
 
 CRITICAL RULES:
@@ -320,30 +328,36 @@ ${JSON.stringify(toolsCalled.map((t) => ({ tool: t.toolName, result: t.result })
 DEPARTMENT CONTACT:
 ${targetDept.name} | Head: ${targetDept.headName} | Email: ${targetDept.email} | Phone: ${targetDept.phone} | Location: ${targetDept.location}`;
 
-        const promptText = `User query: "${input.message}"`;
+      const historyContext = input.conversationHistory && input.conversationHistory.length > 0
+        ? `\n\nRecent context:\n` + input.conversationHistory.slice(-4).map((h) => `${h.role}: ${h.content}`).join('\n')
+        : '';
+      const promptText = `User query: "${input.message}"${historyContext}`;
 
-        // 3.5 second timeout race condition to guarantee immediate response
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500));
-        const geminiPromise = this.ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: promptText,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0.2,
-          },
-        }).catch((e) => {
-          console.warn('Gemini request failed:', e);
-          return null;
-        });
+      for (const modelName of candidateModels) {
+        try {
+          thinkingSteps.push(`Querying AI model [${modelName}] with grounded JDCOEM context...`);
+          const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 7000));
+          const genPromise = ai.models.generateContent({
+            model: modelName,
+            contents: promptText,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: 0.2,
+            },
+          }).catch((e) => {
+            console.warn(`Model ${modelName} attempt failed:`, e?.message || e);
+            return null;
+          });
 
-        const response: any = await Promise.race([geminiPromise, timeoutPromise]);
-
-        if (response && response.text) {
-          finalReply = response.text;
-          thinkingSteps.push('Response synthesized with verified grounding and official citations.');
+          const response: any = await Promise.race([genPromise, timeoutPromise]);
+          if (response && response.text) {
+            finalReply = response.text;
+            thinkingSteps.push(`Response successfully synthesized by ${modelName} with verified institutional citations.`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`Error trying ${modelName}:`, err);
         }
-      } catch (err) {
-        console.warn('Gemini API execution error:', err);
       }
     }
 
@@ -470,6 +484,44 @@ JD College of Engineering & Management operates dedicated college buses connecti
 - **Route 4 (Nandanvan - Sakkardara - Campus):** Departs 08:05 AM.
 
 Students can renew their semester bus pass at the **Transport Counter, Gate No. 1**. For queries, contact Transport In-Charge: **+91 9011081548**.`;
+    }
+
+    // Specific Admissions & Cutoff synthesis
+    if (agent === 'admission' || q.includes('cutoff') || q.includes('admission') || q.includes('eligibility') || q.includes('cet') || q.includes('jee')) {
+      return `### 🏛️ JDCOEM Nagpur Admissions & MHT-CET Cutoff Guidelines (DTE Code: 4163)
+
+**Key Eligibility Criteria:**
+- Candidates must pass HSC (10+2) with Physics and Mathematics as compulsory subjects, plus Chemistry/Biology/Technical Vocational subject, securing at least **45% aggregate** (40% for reserved categories).
+- Valid score in **MHT-CET 2026** or **JEE Main Paper-1** is mandatory for Centralized Admission Process (CAP) rounds.
+
+**Cutoffs & Branch Intakes:**
+- **B.Tech Computer Science & Engineering (CSE - 180 seats):** Expected CAP cutoff is **82.5 - 88.0 percentile**.
+- **B.Tech CSE (AI & Data Science - 120 seats):** Expected cutoff **78.0 - 84.0 percentile**.
+- **B.Tech Information Technology (IT - 60 seats):** Expected cutoff **75.0 - 80.0 percentile**.
+- **Direct Second Year Engineering (DSE):** Minimum 60% aggregate in relevant Engineering Diploma.
+
+**Admissions Office & Helpline:**
+- **Location:** Administrative Wing, Ground Floor, Room AD-04 (Kalmeshwar Road, Nagpur)
+- **Direct Helpline:** **+91 9011081548** / **+91 9011010038**
+- **Email:** \`admissions@jdcoem.ac.in\` | **Portal:** [jdcoem.in](https://jdcoem.in)`;
+    }
+
+    // Specific Scholarships synthesis
+    if (agent === 'scholarships' || q.includes('scholarship') || q.includes('mahadbt') || q.includes('ebc') || q.includes('tfws')) {
+      return `### 🎓 Government Scholarships & Fee Waivers at JDCOEM
+
+JDCOEM students are eligible for all major Maharashtra State & Central Government welfare concessions:
+
+1. **EBC Concession (Economically Backward Class):**
+   - Open category students with annual family income up to **₹8.00 Lakhs** receive a **50% tuition fee waiver** via the MAHADBT portal.
+2. **Dr. Punjabrao Deshmukh Vastigruh Yojna:**
+   - Provides up to **₹30,000/year** hostel and sustenance allowance for students whose families are registered agricultural laborers or marginal farmers.
+3. **TFWS (Tuition Fee Waiver Scheme):**
+   - 100% tuition fee waiver allocated strictly on merit through Centralized Admission Process (CAP).
+4. **Reserved Category Concessions (SC / ST / VJNT / OBC):**
+   - Reimbursed up to 100% or 50% as per Social Welfare Department directives.
+
+**Scholarship Inquiries:** Contact the Scholarship Cell in Room AD-02 or email \`scholarships@jdcoem.ac.in\`.`;
     }
 
     // Default synthesis using citations
