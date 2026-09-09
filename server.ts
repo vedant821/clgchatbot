@@ -37,7 +37,7 @@ async function startServer() {
   app.get('/api/health', (req, res) => {
     res.json({
       status: 'ok',
-      service: 'Apex University AI Help Center',
+      service: 'JD College of Engineering and Management AI Help Center',
       timestamp: new Date().toISOString(),
       vectorEngine: vectorEngine.getStats(),
       geminiConfigured: Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY'),
@@ -56,7 +56,7 @@ async function startServer() {
         message,
         sessionId: sessionId || `session-${Date.now()}`,
         userRole: userRole || 'student',
-        studentRollNo: studentRollNo || 'CS-2023-042',
+        studentRollNo: studentRollNo || 'JD-2023-CSE-042',
         conversationHistory,
       });
 
@@ -124,7 +124,7 @@ async function startServer() {
     record.paidAmount += payAmt;
     record.dueAmount = Math.max(0, record.totalAmount - record.paidAmount);
     record.status = record.dueAmount === 0 ? 'Paid' : 'Partial';
-    record.transactionRef = `APX-PAY-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    record.transactionRef = `JD-PAY-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     res.json({
       success: true,
@@ -265,7 +265,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Apex University AI Help Center server listening on port ${PORT}`);
+    console.log(`JD College of Engineering and Management AI Help Center listening on port ${PORT}`);
   });
 }
 

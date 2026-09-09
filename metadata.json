@@ -1,6 +1,6 @@
 {
-  "name": "Apex University AI Help Center",
-  "description": "Agentic AI college help center and student portal with multi-agent query routing, RAG document knowledge base, live database tools, and role-based dashboards.",
+  "name": "JD College of Engineering and Management AI Help Center",
+  "description": "Autonomous AI Help Center and Student Knowledge Hub for JD College of Engineering and Management, Nagpur (jdcoem.in).",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

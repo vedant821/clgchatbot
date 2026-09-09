@@ -1,5 +1,5 @@
 /**
- * Apex University AI Help Center - Global Types & Data Contracts
+ * JD College of Engineering and Management (JDCOEM Nagpur) AI Help Center - Global Types & Data Contracts
  */
 
 export type UserRole = 'student' | 'parent' | 'applicant' | 'faculty' | 'visitor' | 'admin';
@@ -9,7 +9,8 @@ export interface UserProfile {
   name: string;
   role: UserRole;
   email: string;
-  avatar: string;
+  avatar?: string;
+  initials?: string;
   studentRollNo?: string;
   department?: string;
   designation?: string;

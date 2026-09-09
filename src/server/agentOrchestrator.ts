@@ -38,16 +38,16 @@ export interface OrchestratorOutput {
 
 // Router keywords for agent classification
 const AGENT_KEYWORDS: Record<AgentType, string[]> = {
-  admission: ['admission', 'apply', 'eligibility', 'cutoff', 'entrance', 'prospectus', 'lateral entry', 'application form', 'criteria', 'intake', 'sat', 'jee'],
-  academics: ['attendance', 'syllabus', 'credit', 'course', 'curriculum', 'grade', 'cgpa', 'sgpa', 'faculty', 'professor', 'semester registration', 'condonation', 'debarred', 'advisor'],
-  fees: ['fee', 'tuition', 'payment', 'due', 'installment', 'balance', 'receipt', 'refund', 'fine', 'bank', 'challan', 'transaction'],
-  exams: ['exam', 'admit card', 'hall ticket', 'test', 'mid-term', 'end-term', 'seating', 're-evaluation', 'backlog', 'supplementary', 'paper', 'results', 'schedule'],
-  scholarships: ['scholarship', 'financial aid', 'waiver', 'grant', 'fellowship', 'merit', 'need-based', 'income limit', 'nsp'],
-  placements: ['placement', 'job', 'package', 'ctc', 'company', 'recruiter', 'internship', 'interview', 'salary', 'highest', 'average', 'tpo'],
-  hostel: ['hostel', 'room', 'mess', 'curfew', 'food', 'warden', 'gate pass', 'outpass', 'ac room', 'housing', 'dormitory', 'dinner', 'lunch'],
-  library: ['library', 'book', 'borrow', 'journal', 'ieee', 'acm', 'return', 'catalog', 'overdue', 'study pod', 'reading room', 'shelf'],
-  events: ['event', 'tech fest', 'apexvortex', 'cultural', 'hackathon', 'sports', 'club', 'societies', 'workshop', 'symposium', 'competition'],
-  student_services: ['bus', 'transport', 'id card', 'lost', 'health', 'medical', 'doctor', 'ambulance', 'counseling', 'wellness', 'grievance', 'shuttle'],
+  admission: ['admission', 'apply', 'eligibility', 'cutoff', 'entrance', 'prospectus', 'lateral entry', 'application form', 'criteria', 'intake', 'mht-cet', 'cet', 'cap', 'dte', '4163', 'jee'],
+  academics: ['attendance', 'syllabus', 'credit', 'course', 'curriculum', 'grade', 'cgpa', 'sgpa', 'faculty', 'professor', 'semester registration', 'condonation', 'debarred', 'advisor', 'autonomous'],
+  fees: ['fee', 'tuition', 'payment', 'due', 'installment', 'balance', 'receipt', 'refund', 'fine', 'bank', 'challan', 'transaction', 'sbi collect', 'mahadbt'],
+  exams: ['exam', 'admit card', 'hall ticket', 'test', 'mid-term', 'end-term', 'seating', 're-evaluation', 'backlog', 'supplementary', 'paper', 'results', 'schedule', 'timetable'],
+  scholarships: ['scholarship', 'financial aid', 'waiver', 'grant', 'fellowship', 'merit', 'need-based', 'income limit', 'mahadbt', 'ebc', 'tfws', 'punjabrao'],
+  placements: ['placement', 'job', 'package', 'ctc', 'company', 'recruiter', 'internship', 'interview', 'salary', 'highest', 'average', 'tpo', 'tcs', 'infosys', 'capgemini', '22.5'],
+  hostel: ['hostel', 'room', 'mess', 'curfew', 'food', 'warden', 'gate pass', 'outpass', 'ac room', 'housing', 'dormitory', 'dinner', 'lunch', 'kalmeshwar'],
+  library: ['library', 'book', 'borrow', 'journal', 'ieee', 'delnet', 'return', 'catalog', 'overdue', 'study pod', 'reading room', 'opac'],
+  events: ['event', 'tarang', 'tech fest', 'cultural', 'hackathon', 'sports', 'club', 'societies', 'workshop', 'symposium', 'competition'],
+  student_services: ['bus', 'transport', 'id card', 'lost', 'health', 'medical', 'doctor', 'ambulance', 'counseling', 'wellness', 'grievance', 'sitabuldi', 'dharampeth', 'route'],
   orchestrator: [],
 };
 
@@ -115,26 +115,25 @@ export class AgentOrchestrator {
     }
 
     if (maxScore === 0) {
-      // General question fallback
-      if (q.includes('hello') || q.includes('hi') || q.includes('help') || q.includes('who are you')) {
-        return { agent: 'student_services', confidence: 85, reason: 'General campus greeting and concierge guidance' };
+      if (q.includes('hello') || q.includes('hi') || q.includes('help') || q.includes('who are you') || q.includes('jd')) {
+        return { agent: 'student_services', confidence: 90, reason: 'General campus greeting and concierge guidance' };
       }
-      return { agent: 'academics', confidence: 68, reason: 'Defaulting to Academic Affairs general guidance' };
+      return { agent: 'academics', confidence: 72, reason: 'Defaulting to Academic Affairs general guidance' };
     }
 
-    const confidence = Math.min(99, 75 + maxScore * 5);
+    const confidence = Math.min(99, 78 + maxScore * 4);
     return { agent: bestAgent, confidence, reason: `Matched specialized domain keywords for ${bestAgent}` };
   }
 
   /**
    * Execute live database tools based on query intent
    */
-  public async executeTools(query: string, agent: AgentType, rollNo: string = 'CS-2023-042'): Promise<ToolCallRecord[]> {
+  public async executeTools(query: string, agent: AgentType, rollNo: string = 'JD-2023-CSE-042'): Promise<ToolCallRecord[]> {
     const q = query.toLowerCase();
     const tools: ToolCallRecord[] = [];
 
     // Tool: Fee status check
-    if (agent === 'fees' || q.includes('fee') || q.includes('due') || q.includes('balance') || q.includes('pay')) {
+    if (agent === 'fees' || q.includes('fee') || q.includes('due') || q.includes('balance') || q.includes('pay') || q.includes('receipt')) {
       const startTime = Date.now();
       const records = FEE_RECORDS;
       const totalDue = records.reduce((acc, curr) => acc + curr.dueAmount, 0);
@@ -144,11 +143,11 @@ export class AgentOrchestrator {
         result: {
           rollNo,
           studentName: STUDENT_PROFILE.name,
-          totalDueBalance: `$${totalDue.toLocaleString()}`,
+          totalDueBalance: `₹${totalDue.toLocaleString('en-IN')}`,
           activeRecords: records,
-          nextDueDate: 'October 10, 2026',
+          nextDueDate: 'October 15, 2026',
         },
-        executionTimeMs: Date.now() - startTime + 12,
+        executionTimeMs: Date.now() - startTime + 10,
         status: 'success',
       });
     }
@@ -162,7 +161,7 @@ export class AgentOrchestrator {
         result: {
           rollNo,
           classes: TIMETABLE,
-          totalLecturesWeekly: 10,
+          totalLecturesWeekly: 8,
         },
         executionTimeMs: Date.now() - startTime + 8,
         status: 'success',
@@ -170,18 +169,18 @@ export class AgentOrchestrator {
     }
 
     // Tool: Exam Schedule check
-    if (agent === 'exams' || q.includes('exam') || q.includes('hall ticket') || q.includes('mid-term') || q.includes('seat')) {
+    if (agent === 'exams' || q.includes('exam') || q.includes('hall ticket') || q.includes('mid-term') || q.includes('admit card')) {
       const startTime = Date.now();
       tools.push({
         toolName: 'getExamScheduleAndHallTicket',
         parameters: { rollNo },
         result: {
           rollNo,
-          hallTicketNumber: EXAM_SCHEDULES[0]?.hallTicketNo || 'HT-2026-CS-4209',
-          assignedCenter: 'Aryabhata Academic Block',
+          hallTicketNumber: EXAM_SCHEDULES[0]?.hallTicketNo || 'HT-JDCOEM-2026-CS-4209',
+          assignedCenter: 'Autonomous Exam Wing, Kalmeshwar Campus',
           examPapers: EXAM_SCHEDULES,
         },
-        executionTimeMs: Date.now() - startTime + 15,
+        executionTimeMs: Date.now() - startTime + 12,
         status: 'success',
       });
     }
@@ -205,57 +204,39 @@ export class AgentOrchestrator {
       });
     }
 
-    // Tool: Hostel room availability
-    if (agent === 'hostel' && (q.includes('room') || q.includes('vacancy') || q.includes('ac') || q.includes('bed') || q.includes('block'))) {
+    // Tool: Bus Transport routes
+    if ((agent === 'student_services' || q.includes('bus') || q.includes('transport') || q.includes('route') || q.includes('sitabuldi') || q.includes('dharampeth'))) {
       const startTime = Date.now();
       tools.push({
-        toolName: 'checkHostelRoomAvailability',
-        parameters: { campus: 'North Campus' },
+        toolName: 'getBusTransportRoutes',
+        parameters: { destination: 'JDCOEM Kalmeshwar Campus' },
         result: {
-          blockA_Boys: { totalRooms: 120, vacantNonAC: 14, vacantAC: 4 },
-          blockB_Boys: { totalRooms: 140, vacantDoubleAC: 6, vacantSingleAC: 0 },
-          blockC_Girls: { totalRooms: 150, vacantDoubleAC: 12, vacantNonAC: 8 },
-          blockD_Girls: { totalRooms: 120, vacantDoubleAC: 9, vacantSingleAC: 2 },
-          messStatus: 'Active - Dinner: 7:45 PM to 9:30 PM',
-        },
-        executionTimeMs: Date.now() - startTime + 10,
-        status: 'success',
-      });
-    }
-
-    // Tool: Library catalog check
-    if (agent === 'library' || q.includes('book') || q.includes('clrs') || q.includes('algorithm') || q.includes('borrow')) {
-      const startTime = Date.now();
-      tools.push({
-        toolName: 'searchLibraryCatalog',
-        parameters: { query: 'Computer Science & AI Textbooks' },
-        result: {
-          itemsFound: [
-            { title: 'Introduction to Algorithms (4th Ed) - Cormen, Leiserson', shelf: 'Floor 2, Rack CS-14', copiesAvailable: 5, totalCopies: 12 },
-            { title: 'Artificial Intelligence: A Modern Approach - Russell & Norvig', shelf: 'Floor 2, Rack AI-02', copiesAvailable: 3, totalCopies: 8 },
-            { title: 'Designing Data-Intensive Applications - Martin Kleppmann', shelf: 'Floor 2, Rack CS-18', copiesAvailable: 2, totalCopies: 6 },
+          routes: [
+            { routeNo: 'Route 1', from: 'Sitabuldi Metro Station', stops: 'Sadar, Mankapur, Kalmeshwar', timing: '08:15 AM' },
+            { routeNo: 'Route 2', from: 'Dharampeth', stops: 'Law College, Katol Naka, Campus', timing: '08:20 AM' },
+            { routeNo: 'Route 3', from: 'Trimurti Nagar', stops: 'Pratap Nagar, Wadi, Campus', timing: '08:10 AM' },
           ],
-          onlineAccess: 'IEEE Xplore & ACM Digital Library via SSO active',
+          helpline: '+91 9011081548',
         },
-        executionTimeMs: Date.now() - startTime + 14,
+        executionTimeMs: Date.now() - startTime + 8,
         status: 'success',
       });
     }
 
     // Tool: Placement drive stats
-    if (agent === 'placements' || q.includes('placement') || q.includes('ctc') || q.includes('package') || q.includes('salary') || q.includes('recruiter')) {
+    if (agent === 'placements' || q.includes('placement') || q.includes('ctc') || q.includes('package') || q.includes('salary') || q.includes('recruiter') || q.includes('tcs') || q.includes('infosys')) {
       const startTime = Date.now();
       tools.push({
         toolName: 'getPlacementDriveStats',
-        parameters: { department: 'Computer Science & Engineering' },
+        parameters: { institution: 'JD College of Engineering and Management, Nagpur' },
         result: {
-          highestInternationalCTC: '$148,000 / yr (Palantir Technologies)',
-          highestDomesticCTC: '$54,000 / yr (Microsoft)',
-          averageCSE_CTC: '$16,400 / yr',
-          placementRate: '94.2%',
-          activeRecruitersVisiting: ['Google Cloud', 'Microsoft', 'Amazon AWS', 'Goldman Sachs', 'NVIDIA'],
+          highestPackage: '₹22.50 Lakhs Per Annum (LPA)',
+          averagePackage: '₹4.50 LPA to ₹6.50 LPA',
+          placementRate: '88.5%',
+          topRecruiters: ['Tata Consultancy Services (TCS)', 'Infosys', 'Capgemini', 'Hexaware Technologies', 'Accenture', 'Tech Mahindra', 'Persistent Systems', 'Bajaj Auto'],
+          tpoContact: 'Prof. Amit Sharma (TPO Head), info@jdcoem.ac.in',
         },
-        executionTimeMs: Date.now() - startTime + 11,
+        executionTimeMs: Date.now() - startTime + 10,
         status: 'success',
       });
     }
@@ -268,7 +249,6 @@ export class AgentOrchestrator {
    */
   public async handleChat(input: OrchestratorInput): Promise<OrchestratorOutput> {
     const thinkingSteps: string[] = [];
-    const startTime = Date.now();
 
     // Step 1: Orchestration & Intent Classification
     thinkingSteps.push('Orchestrator analyzing intent, user role context, and conversation memory...');
@@ -277,32 +257,31 @@ export class AgentOrchestrator {
     thinkingSteps.push(`Routed query to [${agentMeta.name}] with ${routing.confidence}% intent confidence.`);
 
     // Step 2: RAG Vector Knowledge Base Search
-    thinkingSteps.push(`Querying pgvector dense embeddings & knowledge documents for ${routing.agent}...`);
+    thinkingSteps.push(`Searching verified JDCOEM regulations & prospectus for ${routing.agent}...`);
     const citations = await vectorEngine.search(input.message, 3);
     if (citations.length > 0) {
-      thinkingSteps.push(`Retrieved ${citations.length} verified citations from university regulations & prospectus.`);
+      thinkingSteps.push(`Retrieved ${citations.length} verified citations from official JDCOEM records.`);
     }
 
     // Step 3: Tool Invocations
-    thinkingSteps.push(`Evaluating tool triggers for database lookup...`);
-    const toolsCalled = await this.executeTools(input.message, routing.agent, input.studentRollNo || 'CS-2023-042');
+    thinkingSteps.push('Evaluating live tool triggers for student records and campus lookups...');
+    const toolsCalled = await this.executeTools(input.message, routing.agent, input.studentRollNo || 'JD-2023-CSE-042');
     if (toolsCalled.length > 0) {
-      thinkingSteps.push(`Executed ${toolsCalled.length} live database tool(s): [${toolsCalled.map((t) => t.toolName).join(', ')}].`);
+      thinkingSteps.push(`Executed ${toolsCalled.length} live tool(s): [${toolsCalled.map((t) => t.toolName).join(', ')}].`);
     }
 
-    // Step 4: Anti-Hallucination & Department Hand-off check
-    // If the question asks for something completely out of bounds (e.g. personal exam question leaks, illegal queries, unreleased future results)
+    // Step 4: Anti-Hallucination & Out of Bounds check
     const isOutOfDomain =
       input.message.toLowerCase().includes('leak') ||
       input.message.toLowerCase().includes('bribe') ||
       input.message.toLowerCase().includes('change my grade secretly') ||
-      (citations.length === 0 && toolsCalled.length === 0 && routing.confidence < 70);
+      input.message.toLowerCase().includes('hack');
 
     const targetDept = DEPARTMENTS.find((d) => d.code === agentMeta.departmentCode) || DEPARTMENTS[1];
 
     if (isOutOfDomain) {
-      thinkingSteps.push('Query falls outside verified knowledge base. Activating Anti-Hallucination Safeguard.');
-      const reply = `I cannot verify this specific information in the official Apex University records. To prevent any misinformation, please contact the authorized department directly:\n\n**${targetDept.name}**\n- **Department Head:** ${targetDept.headName}\n- **Direct Email:** ${targetDept.email}\n- **Phone Extension:** ${targetDept.phone}\n- **Office Location:** ${targetDept.location}\n- **Office Hours:** ${targetDept.officeHours}\n\nOur office administrators will be happy to assist you in person or by phone.`;
+      thinkingSteps.push('Query falls outside verified university policies. Activating Anti-Hallucination Safeguard.');
+      const reply = `I cannot assist with unauthorized requests or unverified procedures. To prevent any misinformation or breach of university conduct, please contact the authorized department head directly:\n\n**${targetDept.name} (JDCOEM Nagpur)**\n- **Department Head:** ${targetDept.headName}\n- **Direct Email:** ${targetDept.email}\n- **Phone:** ${targetDept.phone}\n- **Office Location:** ${targetDept.location}\n- **Office Hours:** ${targetDept.officeHours}\n\nOur administrative office at Khandala Valni, Kalmeshwar Road will be glad to assist you in person.`;
 
       return {
         reply,
@@ -316,22 +295,21 @@ export class AgentOrchestrator {
       };
     }
 
-    // Step 5: Answer Generation using Gemini API or Grounded Synthesizer
+    // Step 5: Answer Generation using Gemini API (with rapid timeout protection) or Grounded Synthesizer
     let finalReply = '';
 
     if (this.ai) {
       try {
-        thinkingSteps.push('Calling Gemini 3.8 Flash model with grounded context and agent persona...');
-        const systemPrompt = `You are the specialized **${agentMeta.name}** at Apex University Help Center.
-You assist ${input.userRole || 'students and visitors'} with authoritative, professional, and precise information.
+        thinkingSteps.push('Calling Gemini 3.8 Flash model with grounded JDCOEM context...');
+        const systemPrompt = `You are the authoritative **${agentMeta.name}** at JD College of Engineering and Management (JDCOEM), Nagpur (jdcoem.in, DTE Code 4163).
+You assist ${input.userRole || 'students and visitors'} with courteous, accurate, and professional information.
 
 CRITICAL RULES:
-1. Speak with polite, encouraging, and clear academic tone.
+1. Speak in a helpful, respectful, and authoritative academic tone.
 2. Ground your response strictly in the provided Official Knowledge Base and Tool Results below.
-3. If specific numbers, fees, percentages or deadlines exist in the context, state them explicitly.
-4. NEVER invent or hallucinate dates, telephone numbers, or policies not in the context.
-5. Format with neat markdown bullets, bold headings, and clear spacing.
-6. If the user asks about live records (fees, exams, timetable, attendance), reference the live tool results accurately.
+3. Currency is Indian Rupee (₹).
+4. Do NOT hallucinate dates, telephone numbers, or unverified claims.
+5. Format with neat markdown bullets, bold highlights, and clean spacing.
 
 OFFICIAL RETRIEVED CONTEXT:
 ${citations.map((c, i) => `[Citation ${i + 1}: ${c.title} (${c.category})] - ${c.chunkExcerpt}`).join('\n\n')}
@@ -343,34 +321,42 @@ DEPARTMENT CONTACT:
 ${targetDept.name} | Head: ${targetDept.headName} | Email: ${targetDept.email} | Phone: ${targetDept.phone} | Location: ${targetDept.location}`;
 
         const promptText = `User query: "${input.message}"`;
-        const response = await this.ai.models.generateContent({
+
+        // 3.5 second timeout race condition to guarantee immediate response
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3500));
+        const geminiPromise = this.ai.models.generateContent({
           model: 'gemini-3.8-flash',
           contents: promptText,
           config: {
             systemInstruction: systemPrompt,
-            temperature: 0.2, // Low temperature for high factual accuracy
+            temperature: 0.2,
           },
+        }).catch((e) => {
+          console.warn('Gemini request failed:', e);
+          return null;
         });
+
+        const response: any = await Promise.race([geminiPromise, timeoutPromise]);
 
         if (response && response.text) {
           finalReply = response.text;
-          thinkingSteps.push('Response synthesized with verified grounding and source citations.');
+          thinkingSteps.push('Response synthesized with verified grounding and official citations.');
         }
       } catch (err) {
-        console.warn('Gemini API call error, falling back to grounded rule engine:', err);
+        console.warn('Gemini API execution error:', err);
       }
     }
 
-    // Fallback deterministic synthesis if Gemini API key not present or call failed
+    // Fallback deterministic synthesis if Gemini timed out, absent, or failed
     if (!finalReply) {
-      thinkingSteps.push('Grounded response generated using verified knowledge base records & tool outputs.');
+      thinkingSteps.push('Grounded response generated using verified JDCOEM knowledge base & tool outputs.');
       finalReply = this.generateGroundedResponse(input.message, routing.agent, citations, toolsCalled, targetDept);
     }
 
     return {
       reply: finalReply,
       agentType: routing.agent,
-      confidence: Math.max(88, routing.confidence),
+      confidence: Math.max(90, routing.confidence),
       citations,
       toolsCalled,
       isHandoff: false,
@@ -395,106 +381,122 @@ ${targetDept.name} | Head: ${targetDept.headName} | Email: ${targetDept.email} |
 
 Here is the current fee account balance for **${STUDENT_PROFILE.name}** (${STUDENT_PROFILE.program}):
 
-- **Total Outstanding Balance:** **${feeTool.totalDueBalance}**
-- **Upcoming Due Date:** **${feeTool.nextDueDate}**
-- **Semester VI Tuition:** Paid in Full (Txn: \`APX-TXN-20260114-8842\`)
-- **Semester VII Advance:** Total $88,000 | Paid $40,000 | **Remaining Due: $48,000**
-- **Scholarship Benefit:** $15,000 Dean’s Merit Credit applied.
+- **Total Outstanding Due Balance:** **${feeTool.totalDueBalance}**
+- **Upcoming Payment Deadline:** **${feeTool.nextDueDate}**
+- **Semester VI Fee Status:** **Paid in Full** (Ref: \`JD-PAY-20260114-8842\`)
+- **Semester VII Current Term:** Total ₹94,000 | Paid ₹50,000 | **Balance Due: ₹44,000**
+- **Scholarship Benefit:** ₹22,000 MAHADBT / EBC concession applied.
 
-You can settle this balance directly online via the **Student Dashboard > Fees & Dues** or through the campus accounts counter in **${dept.location}**.`;
+You can settle remaining balances through the **Student Portal > Fees & Dues** section via online UPI/NetBanking or at the Accounts Counter in **${dept.location}**.`;
     }
 
     // Specific Timetable response
     if (tools.some((t) => t.toolName === 'getStudentTimetable')) {
       return `### 📅 Academic Timetable for ${STUDENT_PROFILE.name} (${STUDENT_PROFILE.department})
 
-Here are your upcoming classes scheduled for this week:
+Here are your upcoming autonomous lectures and practical labs scheduled for this week:
 
-- **Monday 09:00 AM - 10:15 AM**: CS301 *Distributed Cloud Systems* — Turing Hall 102 (Prof. Alan Wright)
-- **Monday 10:30 AM - 11:45 AM**: CS304 *Artificial Intelligence & Agents* — Science Block 204 (Dr. Sarah Connor)
-- **Monday 01:30 PM - 04:00 PM**: CS305L *Deep Learning & NLP Lab* — Computing Lab 4B
-- **Tuesday 09:30 AM - 10:45 AM**: CS308 *Database Internals & Vector DBs* — Turing Hall 104 (Prof. Katherine Vance)
+- **Monday 09:30 AM - 10:30 AM**: CS301 *Distributed Cloud Architecture* — Room 204, CSE Wing (Prof. S. R. Sharma)
+- **Monday 10:30 AM - 11:30 AM**: CS304 *Artificial Intelligence & Machine Learning* — Room 204 (Dr. Neeta Dongre)
+- **Monday 12:00 PM - 02:00 PM**: CS305L *AI & Deep Learning Practical Lab* — Advanced Computing Lab 3
+- **Tuesday 09:30 AM - 10:30 AM**: CS302 *Design & Analysis of Algorithms* — Room 204 (Prof. Rajesh Kulkarni)
 
-For the full 5-day schedule, visit the **Student Portal Timetable view**.`;
+For full day-by-day weekly schedule, check the **Student Dashboard > Timetable** view.`;
     }
 
     // Specific Exam response
     if (tools.some((t) => t.toolName === 'getExamScheduleAndHallTicket')) {
-      return `### 📝 Examination Schedule & Hall Ticket (Fall 2026)
+      return `### 📝 Autonomous Examination Schedule & Hall Ticket (Odd Semester 2026)
 
-- **Student:** ${STUDENT_PROFILE.name} (Roll No: **${STUDENT_PROFILE.rollNo}**)
-- **Hall Ticket Number:** **HT-2026-CS-4209** (Status: **Verified & Downloadable**)
-- **Assigned Examination Hall:** Aryabhata Academic Block, Exam Hall 3, Seat **A-34**
+- **Candidate Name:** ${STUDENT_PROFILE.name}
+- **Roll Number:** **${STUDENT_PROFILE.rollNo}**
+- **Hall Ticket Number:** **HT-JDCOEM-2026-CS-4209** (Status: **Verified & Downloadable**)
+- **Assigned Center:** Autonomous Exam Hall A-2, Kalmeshwar Campus, Seat **JD-23-CSE-042**
 
-**Upcoming Papers:**
-1. **Oct 18, 2026 (09:30 AM)**: CS301 *Distributed Cloud Systems*
-2. **Oct 21, 2026 (09:30 AM)**: CS304 *Artificial Intelligence & Agents*
-3. **Oct 24, 2026 (02:00 PM)**: CS308 *Database Internals & Vector DBs*
-4. **Oct 27, 2026 (09:30 AM)**: HS301 *Technology Ethics & IP Rights*
+**Scheduled Examination Papers:**
+1. **Oct 19, 2026 (10:00 AM - 01:00 PM)**: CS301 *Distributed Cloud Architecture*
+2. **Oct 22, 2026 (10:00 AM - 01:00 PM)**: CS302 *Design & Analysis of Algorithms*
+3. **Oct 26, 2026 (10:00 AM - 01:00 PM)**: CS304 *Artificial Intelligence & Machine Learning*
+4. **Oct 29, 2026 (10:00 AM - 01:00 PM)**: CS306 *Cybersecurity & Cryptography*
 
-*Note: Please arrive 20 minutes prior to the exam with your physical Student ID card and printed hall ticket.*`;
+*Please bring a printed copy of your hall ticket along with your official JDCOEM Student ID card.*`;
     }
 
     // Specific Attendance response
     if (tools.some((t) => t.toolName === 'checkAttendanceRecords')) {
       return `### 📊 Official Attendance Audit for ${STUDENT_PROFILE.name}
 
-- **Aggregate Attendance:** **88.1%** (Minimum required: **75.0%**)
-- **Overall Status:** ✅ **Eligible for End-Semester Examinations**
+- **Aggregate Attendance:** **87.3%** (Mandatory autonomous threshold: **75.0%**)
+- **Eligibility Status:** ✅ **Eligible for Semester End Examinations**
 
-**Course-Wise Breakdown:**
-- **CS301 (Distributed Cloud Systems):** 90.5% (38/42 classes)
-- **CS304 (AI & Agents):** 90.0% (36/40 classes)
-- **CS305L (Deep Learning Lab):** 94.4% (17/18 classes)
-- **CS308 (Database Internals):** ⚠️ **77.3%** (34/44 classes) — *Caution: Close to the 75% limit!*
-- **HS301 (Technology Ethics):** 88.9% (32/36 classes)
+**Subject Breakdown:**
+- **CS301 (Distributed Cloud Architecture):** 89.5% (34/38 lectures)
+- **CS304 (AI & Machine Learning):** 90.5% (38/42 lectures)
+- **CS305L (Deep Learning Lab):** 94.4% (17/18 labs)
+- **CS302 (Algorithms):** ⚠️ **77.8%** (28/36 lectures) — *Notice: Maintain regular attendance to stay safely above 75%!*
+- **CS306 (Cybersecurity):** 84.4% (27/32 lectures)
 
-Per Section 4.2 of the Academic Regulations, falling below 75% will require medical condonation or result in a debarred course grade.`;
-    }
-
-    // Specific Hostel response
-    if (tools.some((t) => t.toolName === 'checkHostelRoomAvailability')) {
-      return `### 🏠 Hostel & Residential Life Update
-
-- **Curfew Policy:** Campus gates and hostel blocks close strictly at **10:00 PM** (10:30 PM Saturdays).
-- **Dining Mess:** Breakfast (7:30 - 9:15 AM) | Lunch (12:15 - 2:00 PM) | Dinner (7:45 - 9:30 PM).
-- **Live Vacancies:**
-  - **Block B (Boys Double AC):** 6 beds available
-  - **Block A (Boys Non-AC):** 14 beds available
-  - **Block C & D (Girls AC):** 21 beds available
-- **Outpass Process:** Apply via Student Portal 6 hours in advance with guardian SMS confirmation.`;
+Under JDCOEM Autonomous Academic Bylaws, falling below 75% requires medical condonation certified by a civil surgeon or will result in being debarred from exams.`;
     }
 
     // Placement response
-    if (tools.some((t) => t.toolName === 'getPlacementDriveStats')) {
-      return `### 💼 Training & Placement Cell (TPO) Factsheet
+    if (tools.some((t) => t.toolName === 'getPlacementDriveStats') || agent === 'placements') {
+      return `### 💼 JDCOEM Training & Placement (TPO) Factsheet
 
-- **Overall Placement Rate:** **94.2%** for the 2025-2026 graduating batch
-- **Highest International Offer:** **$148,000 / year** (Palantir Technologies)
-- **Highest Domestic Offer:** **$54,000 / year** (Microsoft IDC)
-- **Average CSE Package:** **$16,400 / year**
-- **Eligibility Requirement:** Minimum 7.0 CGPA with zero active backlogs for Tier-1 companies.
-- **Visiting Recruiters:** Google Cloud, Microsoft, Amazon AWS, Goldman Sachs, NVIDIA, and Qualcomm.`;
+- **Highest Salary Package:** **₹22.50 Lakhs Per Annum (LPA)**
+- **Average Salary Package:** **₹4.50 LPA to ₹6.50 LPA**
+- **Overall Placement Rate:** Over **88%** of eligible students successfully placed
+- **Top Recruiters Visiting Campus:**
+  - Tata Consultancy Services (TCS)
+  - Infosys
+  - Capgemini
+  - Hexaware Technologies
+  - Accenture
+  - Tech Mahindra
+  - Persistent Systems
+  - Cognizant & Bajaj Auto
+- **TPO Eligibility:** Minimum 60% or 6.5 CGPA in 10th, 12th, and all B.Tech semesters with no active backlogs.`;
+    }
+
+    // Bus Transport response
+    if (tools.some((t) => t.toolName === 'getBusTransportRoutes') || q.includes('bus') || q.includes('transport')) {
+      return `### 🚌 JDCOEM Nagpur College Bus Transit Service
+
+JD College of Engineering & Management operates dedicated college buses connecting all major sectors of Nagpur city to the Kalmeshwar campus:
+
+- **Route 1 (Sitabuldi - Sadar - Mankapur - JDCOEM):** Departs Sitabuldi Metro Station at 08:15 AM, Mankapur Square at 08:35 AM.
+- **Route 2 (Dharampeth - Katol Naka - JDCOEM):** Departs Dharampeth at 08:20 AM.
+- **Route 3 (Trimurti Nagar - Pratap Nagar - Wadi - JDCOEM):** Departs Trimurti Nagar at 08:10 AM.
+- **Route 4 (Nandanvan - Sakkardara - Campus):** Departs 08:05 AM.
+
+Students can renew their semester bus pass at the **Transport Counter, Gate No. 1**. For queries, contact Transport In-Charge: **+91 9011081548**.`;
     }
 
     // Default synthesis using citations
     if (citations.length > 0) {
       const best = citations[0];
-      return `### 🏛️ Official Guidelines from ${best.title}
+      return `### 🏛️ Official Guidelines from JDCOEM Knowledge Base (${best.title})
 
 ${best.chunkExcerpt}
 
 ---
-**Need further official assistance?**
-You can consult the **${dept.name}**:
+**Need official department verification?**
+Contact **${dept.name}**:
 - **Location:** ${dept.location}
-- **Email:** \`${dept.email}\` | **Phone:** \`${dept.phone}\`
+- **Email:** \`${dept.email}\` | **Helpline:** \`${dept.phone}\`
 - **Office Hours:** ${dept.officeHours}`;
     }
 
-    return `Welcome to the Apex University Help Center! I am your AI Assistant connected to the **${dept.name}**. 
+    return `Welcome to **JD College of Engineering and Management (JDCOEM), Nagpur** AI Help Center! I am your autonomous campus AI assistant connected to the **${dept.name}**.
 
-I can answer questions regarding academic rules, fee payments, admissions, scholarships, examinations, hostel facilities, and campus services. How may I assist you today?`;
+I can assist you with:
+- B.Tech / M.Tech / MBA / MCA Admissions & MHT-CET Cutoffs (DTE Code: **4163**)
+- Semester Fees, MAHADBT EBC Scholarships, and Payment Receipts
+- Exam Timetables, Hall Tickets, and 75% Attendance Rules
+- Campus Placement Records (Highest Package ₹22.5 LPA) and Visiting Recruiters
+- College Bus Routes from Sitabuldi, Dharampeth, and Mankapur
+
+How may I assist you today?`;
   }
 }
 
